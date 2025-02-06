@@ -13,11 +13,11 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-    - name: E2E
-      id: e2e
+    - name: Tests
+      id: tests
       uses: classroom-resources/autograding-command-grader@v1
       with:
-        test-name: E2E
+        test-name: Tests
         setup-command: npm install
         command: npm test
         timeout: 10
@@ -25,6 +25,6 @@ jobs:
     - name: Autograding Reporter
       uses: classroom-resources/autograding-grading-reporter@v1
       env:
-        E2E_RESULTS: "${{steps.e2e.outputs.result}}"
+        TESTS_RESULTS: "${{steps.tests.outputs.result}}"
       with:
-        runners: e2e
+        runners: tests
