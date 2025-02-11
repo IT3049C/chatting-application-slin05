@@ -3,6 +3,8 @@ const myMessage = document.getElementById("my-message");
 const sendButton = document.getElementById("send-button");
 const chatBox = document.getElementById("chat");
 
+const serverURL = `https://it3049c-chat.fly.dev/messages`;
+
 function formatMessage(message, myNameInput) {
     const time = new Date(message.timestamp);
     const formattedTime = `${time.getHours()}:${time.getMinutes()}`;
@@ -32,55 +34,69 @@ function formatMessage(message, myNameInput) {
     }
 }
 
-function fetchMessages() {
-    return [
-        {
-            id: 1,
-            text: "This is my message",
-            sender: "Yahya Gilany",
-            timestamp: 1537410673072
-        },
-        {
-            id: 2,
-            text: "This is another message",
-            sender: "Yahya Gilany",
-            timestamp: 1537410673072
-        },
-        {
-            id: 3,
-            text: "This is a message from someone else",
-            sender: "Someone Else",
-            timestamp: 1537410673072
+async function fetchMessages() {
+    try {
+        const response = await fetch(serverURL);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    ];
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching messages:", error);
+        return []; 
+    }
 }
 
-function updateMessages() {
-    const messages = fetchMessages();
-    let formattedMessages = "";
-    messages.forEach(message => {
-        formattedMessages += formatMessage(message, nameInput.value);
-    });
-    chatBox.innerHTML = formattedMessages;
+async function updateMessages() {
+    try {
+        const messages = await fetchMessages();
+        let formattedMessages = "";
+        messages.forEach(message => {
+            formattedMessages += formatMessage(message, nameInput.value);
+        });
+        chatBox.innerHTML = formattedMessages;
+    } catch (error) {
+        console.error("Error updating messages:", error);
+    }
 }
 
-function sendMessages(sender, text) {
-    const newMessage = {
-        id: Date.now(),  
-        text: text,
-        sender: sender,
-        timestamp: Date.now()
-    };
-    
-    chatBox.innerHTML += formatMessage(newMessage, sender);
+async function sendMessages(username, text) {
+    try {
+        const newMessage = {
+            sender: username,
+            text: text,
+            timestamp: new Date()
+        };
+
+        const response = await fetch(serverURL, {
+            method: "POST",
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(newMessage)
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        await updateMessages();
+    } catch (error) {
+        console.error("Error sending message:", error);
+    }
 }
 
-sendButton.addEventListener("click", function(event) {
+sendButton.addEventListener("click", async function(event) {
     event.preventDefault();
     const sender = nameInput.value;
     const message = myMessage.value;
-    sendMessages(sender, message);
-    myMessage.value = "";
+    if (sender && message) { 
+        await sendMessages(sender, message);
+        myMessage.value = ""; 
+    }
 });
 
 updateMessages();
+
+const MILLISECONDS_IN_TEN_SECONDS = 10000;
+setInterval(updateMessages, MILLISECONDS_IN_TEN_SECONDS);
